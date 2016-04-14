@@ -1,0 +1,130 @@
+>>>
+   foobar - [fo]bar is [o]ther [b]rainfuck (errr.. [a]nother) [r]unner
+<<<
+
+>>>>>
+     Introducao
+<<<<<
+     Voce deve estar se perguntando, como um idiota pode chamar um pro
+     grama de foobar...  enfim, vai saber.
+
+     foobar se trata de um interpretador Brainf_ck. Se voce nao sabe o
+     que e Brainfuck, saiba que se trata de uma linguagem  minimalista
+     que reproduz uma maquina de Turing.
+>>>>>
+     A Brainf_ck
+<<<<<
+     A Linguagem Brainf_ck foi criada em 1993 por Urban Muller. Ela na
+     verdade e considerada uma Linguagem de programacao de brincadeira
+     . Desista de tentar criar sua monalisa 0 e 1 em Brainf_ck. Isso e
+     for fun somente ok?
+
+     Como foi dito na secao anterior, Brainf_ck equivale a uma maquina
+     de estados de Turing. Isso quer dizer que muita coisa pode ser fe
+     ita com essa Linguagem.
+
+     O que rege a Brainf_ck e a concisao. Ao contrario  de  Linguagens 
+     tipo C, C++, Java ou Pascal etc, que aceitam diversos simbolos pa
+     ra dizermos o que o computador deve fazer, Brainf_ck aceita os se
+     guintes simbolos:
+
+     * '+'
+     * '-'
+     * '>'
+     * '<'
+     * '['
+     * ']'
+     * '.'
+     * ','
+
+     Alem disso, Brainf_ck nao aceita a declaracao de variaveis,  voce
+     conta com apenas um ponteiro (geralmente com 30000 bytes).  O pon
+     teiro guarda em cada celula um byte.  Ao longo de um programa Bra
+     inf_ck podemos deslocar o apontador do ponteiro por qualquer  uma
+     das celulas, podendo essas celulas serem alteradas.  Cada  celula 
+     inicialmente possui o valor zero.
+
+     O simbolo '+' serve para incrementar o conteudo da celula para  a
+     qual o apontador esta apontando.
+
+     O simbolo '-' e o complemento do anterior, ou seja,  faz o contra
+     rio.
+
+     O simbolo '>' incrementa o apontador.
+
+     O simbolo '<' decrementa o apontador.
+
+     O simbolo '[' inicia uma estrutura de repeticao Brainf_ck.
+
+     O simbolo ']' finaliza.
+
+     O simbolo '.' imprime o valor da celula a qual o apontador esta a
+     pontando.
+
+     O simbolo ',' carrega um byte para a celula a qual o apontador es
+     ta apontando.
+
+     Todos os demais simbolos sao geralmente tratados como comentario.
+
+     A estrutura de repeticao funciona da seguinte forma:  o que  esti
+     ver entre [..] e repetido ate que o valor da celula seja 0.
+
+     Um programa em Brainf_ck se trata somente de um codigo escrito em
+     arquivo texto, geralmente por convencao,  possui  extensao .b  ou
+     .bf. A Linguagem e interpretada, o que indica  que  nenhum codigo 
+     executavel sera gerado sem a ajuda de um interpretador.
+
+     Para ler e somar dois bytes em Brainf_ck pode ser assim:
+
+     ``soma.bf''
+     ,>,<[->+<]>.
+>>>>>
+     Usando o foobar
+<<<<<
+     O foobar funciona por linha de comando para executarmos um progra
+     ma Brainf_ck com ele, basta:
+
+     ./foobar <nome do arquivo onde esta o programa>
+
+     Alem de executar o basico de um interpretador Brainf_ck, o foobar
+     executa outras coisas bem basicas e uteis. Voce por exemplo, pode
+     durante a escrita de um programa saber o valor em decimal  de  de
+     terminado simbolo ascii, para isso:
+
+     ./foobar --ascii2dec
+
+     O contrario tambem pode ser desejado, saber qual caractere possui
+     determinado valor decimal:
+
+     ./foobar --dec2ascii
+
+     Voce tambem pode querer consultar toda a tabela ascii:
+
+     ./foobar --asciitable
+
+     Essa ultima funcionalidade, talvez seja mais facil voce redirecio
+     nar sua saida para um arquivo para consulta posterior:
+
+     ./foobar --asciitable > tabela_ascii
+
+     ou
+
+     ./foobar --asciitable | more
+
+     Caso voce queira executar um programa Brainf_ck sem  precisar cha
+     mar de forma explicita o interpretador,  na primeira linha de seu
+     programa coloque:
+
+     #!<path completo para o foobar>
+
+     Logo apos voce deve dar ao seu programa permissao de execucao, po
+     de ser feito assim:
+
+     chmod u+x <nome do seu programa>
+
+     Depois, quando quiser roda-lo basta no diretorio  onde esta o seu 
+     programa:
+
+     ./<nome do seu programa>
+--
+						       Rafael Santiago

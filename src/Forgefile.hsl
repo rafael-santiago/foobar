@@ -1,0 +1,24 @@
+include ~/toolsets/gcc/gcc-app.hsl
+include ~/toolsets/common/utils/lang/c/dependency_scanner.hsl
+
+var src type list;
+var incdir type list;
+var inc type list;
+var libdir type list;
+var lib type list;
+var deps type string;
+var appname type string;
+
+project foobar : toolset "gcc-c-app" : dependencies $deps : $src, $incdir, $inc, $libdir, $lib, $appname;
+
+foobar.prologue() {
+    if (hefesto.sys.os_name() == "windows") {
+        $appname = "foobar.exe";
+    } else {
+        $appname = "foobar";
+    }
+    $deps = get_c_cpp_deps();
+    $src.ls(".*\\.c$");
+}
+
+
