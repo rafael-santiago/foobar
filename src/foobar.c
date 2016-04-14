@@ -9,6 +9,34 @@
  */
 #include "foobar.h"
 
+#define F_CK_LINUX 1
+#define F_CK_WIN32 2
+
+#if F_CK_OSYSTEM == F_CK_LINUX
+ #include <termios.h>
+ #include <unistd.h>
+#else
+ #include <conio.h>
+#endif
+
+#define F_CK_CODE_RELEASE "## brainf_ckin @ foobar f_ck code release 0.0f_ck1\n"
+
+static char *f_ck_line_options_state[] = {
+ "--help",
+ "--ascii2dec",
+ "--dec2ascii",
+ "--asciitable",
+ ""
+};
+
+#define DO_F_CK_HELP       0
+#define DO_F_CK_ASCII2DEC  1
+#define DO_F_CK_DEC2ASCII  2
+#define DO_F_CK_ASCIITABLE 3
+#define WHAT_A_F_CK_IS_IT  4
+
+#define F_CK_HELP_STR "# foobar help\n#\n# run brainfuck code: foobar <brainf_ck file>\n# see what you are seeing: foobar --help\n# ascii to decimal conversor: foobar --ascii2dec\n# decimal to ascii conversor: foobar --dec2ascii\n# show the entire ASCII table: foobar --asciitable\n#\n"
+
 static F_CK_CELL_SIZE *handleTheF_ckLoop(F_CK_CELL_SIZE *, FILE *, F_CK_CELL_SIZE *,long *);
 
 static void f_ckAscii2F_ckDec(void);
@@ -257,7 +285,7 @@ static void f_ckAscii2F_ckDec() {
 
 static void f_ckDec2F_ckAscii() {
     unsigned char c[100];
-    printf("ascii: ");
+    printf("dec: ");
 #if F_CK_OSYSTEM == F_CK_LINUX
     fflush(stdout);
     read(STDIN_FILENO,c,100);

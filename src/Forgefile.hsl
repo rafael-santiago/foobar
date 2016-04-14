@@ -1,24 +1,136 @@
+#
+#                                Copyright (C) 2016 by Rafael Santiago
+#
+# This is a free software. You can redistribute it and/or modify under
+# the terms of the GNU General Public License version 2.
+#
 include ~/toolsets/gcc/gcc-app.hsl
 include ~/toolsets/common/utils/lang/c/dependency_scanner.hsl
+include ~/fsutil.hsl
+include ~/string.hsl
 
 var src type list;
-var incdir type list;
+var cflags type list;
 var inc type list;
-var libdir type list;
 var lib type list;
+var ldflags type list;
 var deps type string;
 var appname type string;
 
-project foobar : toolset "gcc-c-app" : dependencies $deps : $src, $incdir, $inc, $libdir, $lib, $appname;
+project foobar : toolset "gcc-c-app" : dependencies $deps : $src, $inc, $cflags, $lib, $ldflags, $appname;
 
 foobar.prologue() {
+    var option type list;
     if (hefesto.sys.os_name() == "windows") {
         $appname = "foobar.exe";
+        $cflags.add_item("-DF_CK_OSYSTEM=F_CK_WIN32");
     } else {
         $appname = "foobar";
+        $cflags.add_item("-DF_CK_OSYSTEM=F_CK_LINUX");
+    }
+    $option = hefesto.sys.get_option("install");
+    if ($option.count() > 0) {
+        install();
     }
     $deps = get_c_cpp_deps();
     $src.ls(".*\\.c$");
 }
 
+foobar.epilogue() {
+    if (hefesto.sys.last_forge_result() == 0) {
+        hefesto.sys.echo("___\nfoobar binary is under \"../bin\" subdirectory.\n");
+    }
+}
 
+local function install() : result type none {
+    if (isfile(hefesto.sys.make_path("../bin/", $appname)) == 0) {
+        hefesto.sys.echo("\n\nLAZY!!\n\n");
+        hefesto.sys.forge("foobar", "Forgefile.hsl", "--obj-output-dir=o --bin-output-dir=../bin");
+        if (hefesto.sys.last_forge_result() != 0) {
+            hefesto.project.abort(1);
+        }
+    }
+    var prefix type list;
+    $prefix = hefesto.sys.get_option("prefix");
+    var prefix_data type string;
+    $prefix_data = "";
+    if ($prefix.count() > 0) {
+        $prefix_data = $prefix.item(0);
+    }
+    var exit_code type int;
+    var location type string;
+    $exit_code = f_ckInstallIt($prefix_data, $location);
+    if ($exit_code != 0) {
+        hefesto.sys.echo("~~~Install error.\n");
+    } else {
+        hefesto.sys.echo("*** Installed at " + $location + ". For uninstalling just remove it.\n");
+    }
+    hefesto.project.abort($exit_code);
+}
+
+local function f_ckInstallIt(prefix type string, at type string) : result type int {
+    if ($prefix.len() == 0) {
+        if (hefesto.sys.os_name() == "windows") {
+            $prefix = hefesto.sys.env("WINDIR");
+        } else {
+            $prefix = "/bin";
+        }
+    }
+    var overwrite type string;
+    var destname type string;
+    $overwrite = "";
+    if (hefesto.sys.os_name() == "windows") {
+        $destname = "foobar.exe";
+    } else {
+        $destname = "foobar";
+    }
+    if (isfile(hefesto.sys.make_path($prefix, "foobar"))) {
+        while ($overwrite != "y" && $overwrite != "n" && $overwrite != "c") {
+            $overwrite = hefesto.sys.prompt("There is a previous file named as \"" + $destname + "\" inside " + $prefix + " should I overwrite it? [y/n/c]: ");
+        }
+        if ($overwrite == "n") {
+            var oldname type string;
+            $oldname = $destname;
+            if (hefesto.sys.os_name() == "windows") {
+                $oldname = strupr($oldname);
+            }
+            var prompt_again type int;
+            $prompt_again = 1;
+            while ($prompt_again == 1) {
+                $destname = hefesto.sys.prompt("Okay, so let me know what name foobar should be named inside your system: ");
+                if (hefesto.sys.os_name() == "windows") {
+                    $prompt_again = ($oldname == strupr($destname));
+                } else {
+                    $prompt_again = ($oldname == $destname);
+                }
+            }
+        } else if ($overwrite == "c") {
+            hefesto.sys.echo("Aborted.\n");
+            hefesto.project.abort(1);
+        }
+        if (hefesto.sys.os_name() == "windows" && $destname.match("\\.[eE][xX][eE]$") == 0) {
+            $destname = $destname + ".exe"; # Marvelous platform, marvelous people.
+            if (strupr($destname) == $oldname) {
+                hefesto.sys.echo("YOU WAS CAUGHT BY THE DUMB PROOF TRAP: Congratulations! You are awesome! I will abort the execution by your safety.");
+                hefesto.project.abort(1);
+            }
+        }
+        $overwrite = "y";
+    } else {
+        $overwrite = "y";
+    }
+    if ($overwrite == "y") {
+        var srcfile type string;
+        if (hefesto.sys.os_name() == "linux") {
+            $srcfile = "../bin/foobar";
+        } else {
+            $srcfile = "..\\bin\\foobar.exe";
+        }
+        $at = hefesto.sys.make_path($prefix, $destname);
+        hefesto.sys.byref($at);
+        if (hefesto.sys.cp($srcfile, $at)) {
+            result 0;
+        }
+    }
+    result 1;
+}
