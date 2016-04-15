@@ -2,7 +2,7 @@
 
 This is just an old toy-project of mine from 2007.
 
-It interprets [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) interpreter. If you are a shitty programmer when
+It interprets [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) code. If you are a shitty programmer when
 talking about pointers you will hate this Language. It is not for you. Anyway, it would be a good exercise to improve
 your skills on this subject.
 
@@ -84,8 +84,8 @@ Okay, do you want to see the whole ``ascii`` table:
 foo@bar:~/src/foobar/src# ../bin/foobar --asciitable
 ```
 
->>"Blah-blah-blah... I can not see the entire table due to the scrolling... Blah-blah-blah.
->>-- WARNING: To getting some TP follow this direction --->"
+>"Blah-blah-blah... I can not see the entire table due to the scrolling... Blah-blah-blah.
+>-- WARNING: To getting some TP follow this direction --->"
 
 Hey naive:
 
