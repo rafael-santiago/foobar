@@ -11,7 +11,7 @@ your skills on this subject.
 For building issues you need to use [Hefesto](https://github.com/rafael-santiago/hefesto). Because I am sure that you
 belong to a rare class of human being: ``The homo sapiens reader sapiens``. Just go ahead and put it to work on your system.
 
-Once it done just change for the ``foobar's`` ``src`` subdirectory and "pray" for ``Hefesto`` from there... ;)
+Once it done go to the ``foobar's`` ``src`` subdirectory and "pray" for ``Hefesto`` from there... ;)
 
 ```
 foo@bar:~/src/foobar/src# hefesto
