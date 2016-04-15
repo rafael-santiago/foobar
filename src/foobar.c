@@ -8,6 +8,9 @@
  * by Rafael Santiago
  */
 #include "foobar.h"
+#include "ctx.h"
+#include <string.h>
+#include <stdlib.h>
 
 #define F_CK_LINUX 1
 #define F_CK_WIN32 2
@@ -37,8 +40,6 @@ static char *f_ck_line_options_state[] = {
 
 #define F_CK_HELP_STR "# foobar help\n#\n# run brainfuck code: foobar <brainf_ck file>\n# see what you are seeing: foobar --help\n# ascii to decimal conversor: foobar --ascii2dec\n# decimal to ascii conversor: foobar --dec2ascii\n# show the entire ASCII table: foobar --asciitable\n#\n"
 
-static F_CK_CELL_SIZE *handleTheF_ckLoop(F_CK_CELL_SIZE *, FILE *, F_CK_CELL_SIZE *,long *);
-
 static void f_ckAscii2F_ckDec(void);
 
 static void f_ckDec2F_ckAscii(void);
@@ -47,183 +48,106 @@ static void showTheF_ckAsciiTable(void);
 
 static int checkF_ckBrackets(FILE *);
 
-int f_ckTheBrain(F_CK_CELL_SIZE *f_ck_pointer, FILE *f_ck_file){
-    char c;
-    long f_ck_offset, f_ck_instructions_counter = 0L;
-#if F_CK_OSYSTEM == F_CK_LINUX 
-    struct termios f_ck_attr, f_ck_old_attr;
-#endif
-    F_CK_CELL_SIZE *f_ck_pt_start = f_ck_pointer;
-    if (!f_ck_file) {
-        informthef_ckerror(F_CK_ERROR_NULL_FILE);
-        return 0;
-    }
-    if (!checkF_ckBrackets(f_ck_file)) {
-        return 0;
-    }
-    printf("*** bof#!@\n");
-    c = getc(f_ck_file);
-    while (!feof(f_ck_file) && !f_ck_ctrl_c) {
-
-        switch (c) {
-
-            case '+':
-                if (*f_ck_pointer < 255) {
-                    (*f_ck_pointer)++;
-                    f_ck_instructions_counter++;
-                }
-                break;
-
-            case '-':
-                if (*f_ck_pointer > 0) {
-                    (*f_ck_pointer)--;
-                    f_ck_instructions_counter++;
-                }
-                break;
-
-            case '>':
-                if (f_ck_pointer < f_ck_pt_start + POINTER_SIZE) {
-                    f_ck_pointer++;
-                }
-                f_ck_instructions_counter++;
-                break;
-
-            case '<':
-                if (f_ck_pointer > f_ck_pt_start) {
-                    f_ck_pointer--;
-                }
-                f_ck_instructions_counter++;
-                break;
-
-            case '.':
-                printf("%c",*f_ck_pointer);
-                f_ck_instructions_counter++;
-                break;
-
-            case ',':
-#if F_CK_OSYSTEM == F_CK_LINUX
-                fflush(stdout);
-                tcgetattr(STDIN_FILENO,&f_ck_attr);
-                f_ck_old_attr = f_ck_attr;
-                f_ck_attr.c_lflag = ~(ICANON);
-                tcsetattr(STDIN_FILENO,TCSANOW,&f_ck_attr);
-                read(STDIN_FILENO,f_ck_pointer,1);
-                tcsetattr(STDIN_FILENO,TCSANOW,&f_ck_old_attr);
-#else
-                *f_ck_pointer = getch();
-                printf("%c",*f_ck_pointer);
-#endif
-                f_ck_instructions_counter++;
-                break;
-
-            case '[':
-                f_ck_offset = ftell(f_ck_file);
-                f_ck_pointer = handleTheF_ckLoop(f_ck_pointer, f_ck_file, f_ck_pt_start, &f_ck_instructions_counter);
-__f_ck_check_pointer:
-                if(*f_ck_pointer){
-                    fseek(f_ck_file, f_ck_offset, SEEK_SET);
-                    f_ck_pointer = handleTheF_ckLoop(f_ck_pointer, f_ck_file, f_ck_pt_start, &f_ck_instructions_counter);
-                    if (!f_ck_ctrl_c)
-                        goto __f_ck_check_pointer;
-                }
-;
-                f_ck_instructions_counter++;
-                break;
+int loadThisF_ckinCode(brainf_ck_machine_ctx **machine, const char *filepath) {
+    FILE *input = NULL;
+    char *code = NULL;
+    long code_size = 0;
+    input = fopen(filepath, "rb");
+    if (input != NULL) {
+        if (! checkF_ckBrackets(input)) {
+            fclose(input);
+            return 0;
         }
-        c = getc(f_ck_file);
     }
-    printf("\n*** eof#!@\n-- %d f_ckin instructions executed --\n%s", f_ck_instructions_counter, F_CK_CODE_RELEASE);
-    fseek(f_ck_file, 0L, SEEK_SET);
-    return 1;
+    fseek(input, 0L, SEEK_END);
+    code_size = ftell(input);
+    fseek(input, 0L, SEEK_SET);
+    code = (char *) malloc(code_size + 1);
+    memset(code, 0, code_size + 1);
+    fread(code, 1, code_size, input);
+    fclose(input);
+    (*machine)->program = asm_brainf_ck_program(code);
+    return ((*machine)->program != NULL);
 }
 
-static F_CK_CELL_SIZE *handleTheF_ckLoop(F_CK_CELL_SIZE *f_ck_pointer, FILE *f_ck_file, F_CK_CELL_SIZE *f_ck_pt_start, long *f_ck_instructions_counter){
-    char c;
-    long f_ck_offset;
+void unloadThisF_ckinCode(brainf_ck_machine_ctx **machine) {
+    del_brainf_ck_instructions_ctx((*machine)->program);
+    (*machine)->program = NULL;
+    (*machine)->sp = NULL;
+}
+
+void print_stack(brainf_ck_machine_ctx **machine) {
+    unsigned char *sp = NULL;
+    for (sp = (*machine)->stack; sp != (*machine)->stack_end; sp++) {
+        printf("%d ", *sp);
+    }
+    printf("\n");
+}
+
+void runThisF_ckinCode(brainf_ck_machine_ctx **machine) {
+    brainf_ck_instructions_ctx *p = NULL, *old_f_ck_tape = NULL;
 #if F_CK_OSYSTEM == F_CK_LINUX
     struct termios f_ck_attr, f_ck_old_attr;
 #endif
-    if (!f_ck_file) {
-        informthef_ckerror(F_CK_ERROR_NULL_FILE);
-        return NULL;
+    if (machine == NULL || (*machine)->program == NULL) {
+        return;
     }
-    c = getc(f_ck_file);
-    while (!feof(f_ck_file) && !f_ck_ctrl_c) {
-        switch (c) {
+    if ((*machine)->sp == NULL) {
+        (*machine)->sp = (*machine)->stack;
+    }
+    for (p = (*machine)->program; p != NULL && !f_ck_ctrl_c; p = p->next) {
+        switch (p->instr) {
 
-            case '+':
-                if (*f_ck_pointer < 255) {
-                    (*f_ck_pointer)++;
-                    (*f_ck_instructions_counter)++;
+            case kFckDataAdd:
+                (*(*machine)->sp)++;
+                break;
+
+            case kFckDataDec:
+                (*(*machine)->sp)--;
+                break;
+
+            case kFckPtrAdd:
+                if ((*machine)->sp < (*machine)->stack_end) {
+                    (*machine)->sp++;
                 }
                 break;
 
-            case '-':
-                if (*f_ck_pointer > 0) {
-                    (*f_ck_pointer)--;
-                    (*f_ck_instructions_counter)++;
+            case kFckPtrDec:
+                if ((*machine)->sp > (*machine)->stack) {
+                    (*machine)->sp--;
                 }
                 break;
 
-            case '>':
-                if (f_ck_pointer < f_ck_pt_start + POINTER_SIZE) {
-                    f_ck_pointer++;
-                }
-                (*f_ck_instructions_counter)++;
+            case kFckWriteData:
+                printf("%c", *(*machine)->sp);
                 break;
 
-            case '<':
-                if (f_ck_pointer > f_ck_pt_start) {
-                    f_ck_pointer--;
-                }
-                (*f_ck_instructions_counter)++;
-                break;
-
-            case '.':
-                printf("%c", *f_ck_pointer);
-                (*f_ck_instructions_counter)++;
-                break;
-
-            case ',':
+            case kFckReadData:
 #if F_CK_OSYSTEM == F_CK_LINUX
                 fflush(stdout);
                 tcgetattr(STDIN_FILENO, &f_ck_attr);
                 f_ck_old_attr = f_ck_attr;
                 f_ck_attr.c_lflag = ~(ICANON);
-                tcsetattr(STDIN_FILENO, TCSANOW, &f_ck_attr);
-                read(STDIN_FILENO, f_ck_pointer, 1);
+                tcsetattr(STDIN_FILENO,TCSANOW, &f_ck_attr);
+                read(STDIN_FILENO, (*machine)->sp, 1);
                 tcsetattr(STDIN_FILENO, TCSANOW, &f_ck_old_attr);
 #else
                 *f_ck_pointer = getch();
-                printf("%c", *f_ck_pointer);
+                printf("%c",*(*machine)->sp);
 #endif
-                (*f_ck_instructions_counter)++;
                 break;
 
-            case '[':
-                f_ck_offset = ftell(f_ck_file);
-                f_ck_pointer = handleTheF_ckLoop(f_ck_pointer, f_ck_file, f_ck_pt_start, f_ck_instructions_counter);
-__f_ck_while_check_pointer:
-                if (f_ck_pointer != NULL && *f_ck_pointer) {
-                    fseek(f_ck_file, f_ck_offset, SEEK_SET);
-                    f_ck_pointer = handleTheF_ckLoop(f_ck_pointer,f_ck_file,f_ck_pt_start,f_ck_instructions_counter);
-                    if (!f_ck_ctrl_c) {
-                        goto __f_ck_while_check_pointer;
-                    }
+            case kFckLoop:
+                old_f_ck_tape = (*machine)->program;
+                (*machine)->program = p->sub;
+                while (*(*machine)->sp > 0 && !f_ck_ctrl_c) {
+                    runThisF_ckinCode(machine);
                 }
-;
-                (*f_ck_instructions_counter)++;
-                break;
-
-            case ']':
-                (*f_ck_instructions_counter)++;
-                return f_ck_pointer;
+                (*machine)->program = old_f_ck_tape;
                 break;
 
         }
-        c = getc(f_ck_file);
     }
-    return f_ck_pointer;
 }
 
 void handleTheF_ckCommandLine(int cmdno){

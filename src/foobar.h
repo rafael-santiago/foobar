@@ -1,5 +1,5 @@
 /*
- *                                Copyright (C) 2007 by Rafael Santiago
+ *                          Copyright (C) 2007, 2016 by Rafael Santiago
  *
  * This is a free software. You can redistribute it and/or modify under
  * the terms of the GNU General Public License version 2.
@@ -8,9 +8,10 @@
  * by Rafael Santiago
  *
  */
-#ifndef _FOOBAR_H
-#define _FOOBAR_H 1
+#ifndef FOOBAR_FOOBAR_H
+#define FOOBAR_FOOBAR_H 1
 
+#include "types.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -24,16 +25,18 @@ int f_ck_ctrl_c;
 #define F_CK_ERROR_NO_MEMORY 1
 #define F_CK_ERROR_DUMB_USER 2
 
-#define POINTER_SIZE 30000
+#define F_CK_STACK_SIZE 300000
 #define informthef_ckerror(e) (\
  e == F_CK_ERROR_NULL_FILE ? printf("run forest run: unable to access the file!\n") :\
  e == F_CK_ERROR_NO_MEMORY ? printf("run forest run: no usable memory!\n") :\
  e == F_CK_ERROR_DUMB_USER ? printf("run forest run: use: foobar <brainf_ck file>\n") :\
  printf("run forest run: SUPERunKNOWN error!\n") )
 
-#define F_CK_CELL_SIZE unsigned char
+int loadThisF_ckinCode(brainf_ck_machine_ctx **machine, const char *filepath);
 
-int f_ckTheBrain(F_CK_CELL_SIZE *, FILE *);
+void unloadThisF_ckinCode(brainf_ck_machine_ctx **machine);
+
+void runThisF_ckinCode(brainf_ck_machine_ctx **machine);
 
 void handleTheF_ckCommandLine(int);
 

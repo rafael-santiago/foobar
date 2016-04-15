@@ -1,5 +1,5 @@
 /*
- *                                Copyright (C) 2007 by Rafael Santiago
+ *                          Copyright (C) 2007, 2016 by Rafael Santiago
  *
  * This is a free software. You can redistribute it and/or modify under
  * the terms of the GNU General Public License version 2.
@@ -9,6 +9,7 @@
  *
  */
 #include "foobar.h"
+#include "ctx.h"
 #include <stdlib.h>
 #include <signal.h>
 
@@ -20,25 +21,26 @@ void f_ck_SIGINT_f_ck_callback(int s) {
 int main(int argc, char **argv) {
     FILE *f_ck_file;
     int i;
-    F_CK_CELL_SIZE *f_ck_pointer;
     extern int f_ck_ctrl_c;
+    brainf_ck_machine_ctx *f_ck_machine = NULL;
     if (argc > 1) {
         if (*argv[1] == '-' && *(argv[1]+1) == '-') {
             handleTheF_ckCommandLine(getTheF_ckAsk(argv[1]));
         } else {
-            if(!(f_ck_pointer = (F_CK_CELL_SIZE *) malloc(POINTER_SIZE))) {
-                informthef_ckerror(F_CK_ERROR_NO_MEMORY);
-                return 1;
-            }
             signal(SIGINT, f_ck_SIGINT_f_ck_callback);
             f_ck_ctrl_c = 0;
-            memset(f_ck_pointer,0,sizeof(F_CK_CELL_SIZE)*POINTER_SIZE);
-            f_ck_file = fopen(argv[1], "r");
-            f_ckTheBrain(f_ck_pointer, f_ck_file);
-            if (f_ck_file != NULL) {
-                fclose(f_ck_file);
+            f_ck_machine = new_brainf_ck_machine(F_CK_STACK_SIZE);
+            if (f_ck_machine == NULL) {
+                return 1;
             }
-            free(f_ck_pointer);
+            if (!loadThisF_ckinCode(&f_ck_machine, argv[1])) {
+                del_brainf_ck_machine(f_ck_machine);
+                return 1;
+            }
+            runThisF_ckinCode(&f_ck_machine);
+            unloadThisF_ckinCode(&f_ck_machine);
+            del_brainf_ck_machine(f_ck_machine);
+            return 0;
         }
     } else {
         informthef_ckerror(F_CK_ERROR_DUMB_USER);
