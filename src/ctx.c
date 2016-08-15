@@ -9,26 +9,28 @@
 #include "memory.h"
 #include <string.h>
 
-#define new_brainf_ck_instructions_ctx(m) ( (m) = (brainf_ck_instructions_ctx *) new_f_ck_segment(sizeof(brainf_ck_instructions_ctx)), (m)->instr = kFckNop,\
-                                            (m)->sub = (m)->next = NULL )
+typedef struct _brainf_ck_instructions_ctx_ends {
+    brainf_ck_instructions_ctx *head, *tail;
+}brainf_ck_instructions_ctx_ends;
 
-static brainf_ck_instructions_ctx *get_brainf_ck_instructions_ctx_tail(brainf_ck_instructions_ctx *instructions) {
-    brainf_ck_instructions_ctx *ip;
-    for (ip = instructions; ip->next != NULL; ip = ip->next);
-    return ip;
+static brainf_ck_instructions_ctx* new_brainf_ck_instructions_ctx() {
+    brainf_ck_instructions_ctx *ctx = (brainf_ck_instructions_ctx *) new_f_ck_segment(sizeof(brainf_ck_instructions_ctx));
+
+    ctx->instr = kFckNop;
+    ctx->sub = ctx->next = NULL;
+
+    return ctx;
 }
 
-static brainf_ck_instructions_ctx *add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(brainf_ck_instructions_ctx *ip,
-                                                                                           char instruction) {
-    brainf_ck_instructions_ctx *head = ip, *p = NULL;
-    if (head == NULL) {
-        new_brainf_ck_instructions_ctx(head);
-        p = head;
+static void add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(brainf_ck_instructions_ctx_ends *list,
+                                                                    char instruction) {
+    brainf_ck_instructions_ctx *p = new_brainf_ck_instructions_ctx();
+    if (list->head == NULL) {
+        list->head = p;
     } else {
-        p = get_brainf_ck_instructions_ctx_tail(head);
-        new_brainf_ck_instructions_ctx(p->next);
-        p = p->next;
+        list->tail->next = p;
     }
+    list->tail = p;
     switch (instruction) {
         case '+':
             p->instr = kFckDataAdd;
@@ -58,12 +60,11 @@ static brainf_ck_instructions_ctx *add_brainf_ck_instruction_to_brainf_ck_instru
             p->instr = kFckLoop;
             break;
     }
-    return head;
 }
 
 static const char *asm_brainf_ck_subprogram(const char *subprogram, brainf_ck_instructions_ctx **mainsub) {
     const char *p = subprogram;
-    brainf_ck_instructions_ctx *your_f_ck_substuff = NULL, *f_ck_current = NULL;
+    brainf_ck_instructions_ctx_ends your_f_ck_substuff = {0};
     if (p == NULL) {
         return NULL;
     }
@@ -75,25 +76,24 @@ static const char *asm_brainf_ck_subprogram(const char *subprogram, brainf_ck_in
             case '<':
             case ',':
             case '.':
-                your_f_ck_substuff = add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(your_f_ck_substuff, *p);
+                add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(&your_f_ck_substuff, *p);
                 break;
 
             case '[':
-                your_f_ck_substuff = add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(your_f_ck_substuff, *p);
-                f_ck_current = get_brainf_ck_instructions_ctx_tail(your_f_ck_substuff);
-                p = asm_brainf_ck_subprogram(p + 1, &f_ck_current->sub);
+                add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(&your_f_ck_substuff, *p);
+                p = asm_brainf_ck_subprogram(p + 1, &your_f_ck_substuff.tail->sub);
                 break;
 
         }
         p++;
     }
-    *mainsub = your_f_ck_substuff;
+    *mainsub = your_f_ck_substuff.head;
     return p;
 }
 
 brainf_ck_instructions_ctx *asm_brainf_ck_program(const char *program) {
     const char *p = program;
-    brainf_ck_instructions_ctx *your_f_ck_stuff = NULL, *f_ck_current = NULL;
+    brainf_ck_instructions_ctx_ends your_f_ck_stuff = {0};
     if (p == NULL) {
         return NULL;
     }
@@ -105,18 +105,17 @@ brainf_ck_instructions_ctx *asm_brainf_ck_program(const char *program) {
             case '<':
             case ',':
             case '.':
-                your_f_ck_stuff = add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(your_f_ck_stuff, *p);
+                add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(&your_f_ck_stuff, *p);
                 break;
 
             case '[':
-                your_f_ck_stuff = add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(your_f_ck_stuff, *p);
-                f_ck_current = get_brainf_ck_instructions_ctx_tail(your_f_ck_stuff);
-                p = asm_brainf_ck_subprogram(p + 1, &f_ck_current->sub);
+                add_brainf_ck_instruction_to_brainf_ck_instructions_ctx(&your_f_ck_stuff, *p);
+                p = asm_brainf_ck_subprogram(p + 1, &your_f_ck_stuff.tail->sub);
                 break;
         }
         p++;
     }
-    return your_f_ck_stuff;
+    return your_f_ck_stuff.head;
 }
 
 brainf_ck_machine_ctx *new_brainf_ck_machine(size_t max_stack_size) {
