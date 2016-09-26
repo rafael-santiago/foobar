@@ -84,10 +84,9 @@ Okay, do you want to see the whole ``ascii`` table:
 foo@bar:~/src/foobar/src# ../bin/foobar --asciitable
 ```
 
->"Blah-blah-blah... I can not see the entire table due to the scrolling... Blah-blah-blah.
->-- WARNING: To getting some TP follow this direction --->"
+>"Blah-blah-blah... I can not see the entire table due to the scrolling... Blah-blah-blah."
 
-Hey naive:
+You should use:
 
 ```
 foo@bar:~/src/foobar/src# ../bin/foobar --asciitable | less
