@@ -48,6 +48,26 @@ static void showTheF_ckAsciiTable(void);
 
 static int checkF_ckBrackets(FILE *);
 
+#ifdef __linux__
+
+static brainf_ck_instructions_ctx *try2packthisf_ckinshit(brainf_ck_instructions_ctx *ahead, int *nr, const int instr);
+
+static void asmFckDataAdd(FILE *out, brainf_ck_instructions_ctx **ahead);
+
+static void asmFckDataDec(FILE *out, brainf_ck_instructions_ctx **ahead);
+
+static void asmFckPtrAdd(FILE *out, brainf_ck_instructions_ctx **ahead);
+
+static void asmFckPtrDec(FILE *out, brainf_ck_instructions_ctx **ahead);
+
+static void asmFckWriteData(FILE *out);
+
+static void asmFckReadData(FILE *out);
+
+static void asmFckLoop(FILE *out, brainf_ck_instructions_ctx *subprogram);
+
+#endif
+
 int loadThisF_ckinCode(brainf_ck_machine_ctx **machine, const char *filepath) {
     FILE *input = NULL;
     char *code = NULL;
@@ -83,6 +103,221 @@ void print_stack(brainf_ck_machine_ctx **machine) {
     }
     printf("\n");
 }
+
+#ifdef __linux__
+
+static brainf_ck_instructions_ctx *try2packthisf_ckinshit(brainf_ck_instructions_ctx *ahead, int *nr, const int instr) {
+    *nr = 1;
+    while (ahead->next != NULL && ahead->next->instr == instr) {
+        (*nr)++;
+        ahead = ahead->next;
+    }
+    return ahead;
+}
+
+static void asmFckDataAdd(FILE *out, brainf_ck_instructions_ctx **ahead) {
+    static int n = 0;
+    int c = 0;
+    /*fprintf(out,"cmpl $255, (%%esi)\n"
+                "je set0.%d\n"
+                "\tincl (%%esi)\n"
+                "jmp dadd.%d\n"
+                "set0.%d:\n"
+                "\tmovl $0, (%%esi)\n"
+                "dadd.%d:", n, n, n, n);*/
+    *ahead = try2packthisf_ckinshit(*ahead, &c, kFckDataAdd);
+    fprintf(out, "\taddl $%d, (%%esi)\n"
+                 "\tandl $255, (%%esi)\n", c);
+    n++;
+}
+
+static void asmFckDataDec(FILE *out, brainf_ck_instructions_ctx **ahead) {
+    static int n = 0;
+    fprintf(out,"cmpl $0, (%%esi)\n"
+                "je set255.%d\n"
+                "\tdecl (%%esi)\n"
+                "jmp ddec.%d\n"
+                "set255.%d:\n"
+                "\tmovl $255, (%%esi)\n"
+                "ddec.%d:", n, n, n, n);
+    n++;
+}
+
+static void asmFckPtrAdd(FILE *out, brainf_ck_instructions_ctx **ahead) {
+    static int n = 0;
+    int c = 0;
+
+    /*fprintf(out,"\tmovl $buf, %%ecx\n"
+                "\taddl $300000, %%ecx\n"
+                "\tcmp %%ecx, %%esi\n"
+                "jge askip.%d\n"
+                "\taddl $4, %%esi\n"
+                "askip.%d:\n", n, n);*/
+
+    *ahead = try2packthisf_ckinshit(*ahead, &c, kFckPtrAdd);
+
+    fprintf(out, "\tmovl $buf, %%ecx\n"
+                 "\taddl $%d, %%ecx\n"
+                 "\tcmp %%ecx, %%esi\n"
+                 "jge askip.%d\n"
+                 "\taddl $%d, %%esi\n"
+                 "askip.%d:\n", F_CK_STACK_SIZE - c, n, 4 * c, n);
+
+    n++;
+}
+
+static void asmFckPtrDec(FILE *out, brainf_ck_instructions_ctx **ahead) {
+    static int n = 0;
+    fprintf(out,"\tcmp $buf, %%esi\n"
+                "je dskip.%d\n"
+                "\tsubl $4, %%esi\n"
+                "dskip.%d:\n", n, n);
+    n++;
+}
+
+static void asmFckWriteData(FILE *out) {
+    fprintf(out, "\tpushl (%%esi)\n"
+                 "\tpushl $buf_fmt\n"
+                 "\tcall printf\n"
+                 "\taddl $8, %%esp\n");
+}
+
+static void asmFckReadData(FILE *out) {
+    fprintf(out, "\tpushl $rb\n"
+                 "\tpushl $buf_fmt\n"
+                 "\tcall scanf\n"
+                 "\taddl $8, %%esp\n"
+                 "\tmovl rb, %%ecx\n"
+                 "\tmovl %%ecx, (%%esi)\n");
+}
+
+static void asmFckLoop(FILE *out, brainf_ck_instructions_ctx *subprogram) {
+    brainf_ck_instructions_ctx *p = NULL;
+    static int fck_level = 0;
+    int lv = fck_level++;
+
+
+    fprintf(out,"cmp $0, (%%esi)\n"
+                "je loop.%d.end\n"
+                "loop.%d:\n", lv, lv);
+
+    for (p = subprogram; p != NULL; p = p->next) {
+        switch (p->instr) {
+            case kFckDataAdd:
+                asmFckDataAdd(out, &p);
+                break;
+
+            case kFckDataDec:
+                asmFckDataDec(out, &p);
+                break;
+
+            case kFckPtrAdd:
+                asmFckPtrAdd(out, &p);
+                break;
+
+            case kFckPtrDec:
+                asmFckPtrDec(out, &p);
+                break;
+
+            case kFckWriteData:
+                asmFckWriteData(out);
+                break;
+
+            case kFckReadData:
+                asmFckReadData(out);
+                break;
+
+            case kFckLoop:
+                asmFckLoop(out, p->sub);
+                break;
+        }
+    }
+
+    fprintf(out, "\tcmp $1, bye_babe\n"
+                 "je main_epilogue\n"
+                 "\tcmp $0, (%%esi)\n"
+                 "jne loop.%d\n"
+                 "loop.%d.end:\n", lv, lv);
+}
+
+void asmThisF_ckinCode(FILE *out, brainf_ck_machine_ctx *machine) {
+    brainf_ck_instructions_ctx *p = NULL;
+
+    fprintf(out, ".section .data\n"
+                 "buf:\n"
+                 "\t.rept %d\n"
+                 "\t\t.byte 0x00\n"
+                 "\t.endr\n\n"
+                 "bye_babe:\n"
+                 "\t.int 0\n"
+                 "buf_fmt:\n"
+                 "\t.asciz \"%%c\"\n"
+                 "rb:\n"
+                 "\t.byte 0x00\n"
+                 ".section .text\n"
+                 ".globl _start\n"
+                 "_start:\n"
+                 "\tpushl $sigint_watchdog\n"
+                 "\tpushl $2\n"
+                 "\tcall signal\n"
+                 "\taddl $8, %%esp\n"
+                 "\tpushl $sigint_watchdog\n"
+                 "\tpushl $3\n"
+                 "\tcall signal\n"
+                 "\taddl $8, %%esp\n"
+                 "\tpushl $sigint_watchdog\n"
+                 "\tpushl $15\n"
+                 "\tcall signal\n"
+                 "\taddl $8, %%esp\n"
+                 "\tmovl $buf, %%esi\n", F_CK_STACK_SIZE);
+
+    for (p = machine->program; p != NULL; p = p->next) {
+        switch (p->instr) {
+            case kFckDataAdd:
+                asmFckDataAdd(out, &p);
+                break;
+
+            case kFckDataDec:
+                asmFckDataDec(out, &p);
+                break;
+
+            case kFckPtrAdd:
+                asmFckPtrAdd(out, &p);
+                break;
+
+            case kFckPtrDec:
+                asmFckPtrDec(out, &p);
+                break;
+
+            case kFckWriteData:
+                asmFckWriteData(out);
+                break;
+
+            case kFckReadData:
+                asmFckReadData(out);
+                break;
+
+            case kFckLoop:
+                asmFckLoop(out, p->sub);
+                break;
+        }
+    }
+
+    fprintf(out, "main_epilogue:\n"
+                 "\tpushl $0\n"
+                 "\tcall exit\n"
+                 ".type sigint_watchdog, @function\n"
+                 "sigint_watchdog:\n"
+                 "\tpushl %%ebp\n"
+                 "\tmovl %%esp, %%ebp\n"
+                 "\tmovl $1, bye_babe\n"
+                 "\tmovl %%ebp, %%esp\n"
+                 "\tpopl %%ebp\n"
+                 "\tret\n");
+
+}
+
+#endif
 
 void runThisF_ckinCode(brainf_ck_machine_ctx **machine) {
     brainf_ck_instructions_ctx *p = NULL, *old_f_ck_tape = NULL;

@@ -6,6 +6,8 @@ It interprets [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) code. If you 
 talking about pointers you will hate this Language. It is not for you. Anyway, it would be a good exercise to improve
 your skills on this subject.
 
+You can generate 32-bit ``ELFs`` on ``Linux``.
+
 ## How to build it?
 
 For building issues you need to use [Hefesto](https://github.com/rafael-santiago/hefesto). Because I am sure that you
@@ -98,4 +100,20 @@ or
 foo@bar:~/src/foobar/src# ../bin/foobar --asciitable | more
 ```
 
-but in this case, instead of using this if I were you I would rush to read a good ``UNIX`` book. Seriously!
+but in this case, instead of using this if I were you I would rush to read a good ``UNIX`` book. Seriously! ;)
+
+If you want to generate an executable from your brainfuck code, you should try:
+
+```
+foo@bar:~/src/foobar/src# ../bin/foobar yourcode.bf -oyourbinary
+foo@bar:~/src/foobar/src# ./yourbinary
+```
+
+The binary generated is huge and not optimized. However, I think interesting make a brainf_ck code a self-contained executable...
+You should try the [LostKing.b](https://github.com/rdebath/LostKingdom)... You will get a ``44.4 MB`` binary!!! :D ... It is generating a lousy assembly based on the
+basic operations from the brainfuck input... Even being boring and obvious it could generate ``C`` or any other Language (instead
+of the assembly) and then the executable...
+
+This feature is only written for ``Linux`` 32-bit environments. I am not intending to extending it anymore...
+I am sick of this project... However, if you want to extend it to 64-bit, it would be simple. Windows too...
+Feel free about, this is a free software! :)
